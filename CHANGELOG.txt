@@ -1,0 +1,9 @@
+CHANGELOG
+
+v0.3
+Script now checks for battery capacity to warn users when they should disconnect.
+User can now specify which battery to monitor
+Script exits when no battery is available or dependencies are not met.
+
+v0.2
+First commit. Worked for XFCE Only

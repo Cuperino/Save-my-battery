@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.1
+Name[en_US]=Save my battery!
+GenericName=Save my battery!
+Exec=usr/bin/savebat1
+Terminal=false
+Icon[en_US]=usr/share/savebat/img/icon.png
+Type=Application
+Categories=Application;Accesories;
+Comment[en_US]=Warn user when battery is at capacity or bellow 20%.

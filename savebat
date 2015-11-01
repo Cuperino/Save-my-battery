@@ -1,7 +1,7 @@
 #!/bin/bash
 # savebat - Save my battery!
-# Description: XFCE bash loop to warn user when battery reaches 90% of charge or is bellow 20%.
-# Version: 0.2
+# Description: Warn user when battery is at capacity or bellow 20%.
+# Version: 0.3
 
 #Copyright (c) 2015 Javier O. Cordero Pérez <javier@imaginary.tech>
 #
@@ -23,29 +23,59 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
-#  PROGRAM START.
-$"notify-send" "Save my battery!" "Program started."
-# Enter infinite loop.
-while :
-do
-	# Get current power level.
-	POWERLVL="$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E percentage: | tr -cd [:digit:])"
-	STATE="$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep -E state: | awk '{print $2}')"
-	# If level charging and above 80, send alert!
-	if [ "$POWERLVL" -ge 90 -a "$STATE" == "charging" ]
-	then ($"notify-send" "Save my battery!" "Charge reached $POWERLVL%! Time to disconnect.")
-		play -q snd/sound.ogg &
-		FREQ=15.4
-	elif [ "$POWERLVL" -le 22 -a "$STATE" == "discharging" ]
-	then ($"notify-send" "Save my battery!" "Charge reached $POWERLVL%! Time to plug-in.")
-		play -q snd/alert.ogg &
-		FREQ=12
-	else FREQ=60
+PNAME="Save my battery!"
+PVER="0.2"
+echo "$PNAME Copyright (C) 2015 Javier Cordero Pérez <javier@imaginary.tech>
+
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to
+it under certain conditions; see LICENSE for details.
+
+'$PNAME' version $PVER"
+
+# Get current battery argument, if unavailable, default to BAT0.
+CURRBAT=$1
+if [ "$CURRBAT" == "" ]
+	then CURRBAT='0'
+fi
+
+PRESENT="$(upower -i /org/freedesktop/UPower/devices/battery_BAT$CURRBAT | grep -E present | awk '{print $2}')"
+if [ $PRESENT == 'yes' ]
+then ($"notify-send" "$PNAME" "Program started.")
+	
+	MAXPOWER="$(upower -i /org/freedesktop/UPower/devices/battery_BAT$CURRBAT | grep -E capacity: | tr -cd [:digit:] | cut -c1-2)"
+	if [ "$MAXPOWER" -ne 100 ]
+	then MAXPOWER=`expr $MAXPOWER + 1`
 	fi
 
-	# Debug itteration.
-	echo $POWERLVL", "$STATE
+	# Enter infinite loop.
+	while :
+	do
+		# Get currsaent power level.
+		POWERLVL="$(upower -i /org/freedesktop/UPower/devices/battery_BAT$CURRBAT | grep -E percentage: | tr -cd [:digit:])"
+		STATE="$(upower -i /org/freedesktop/UPower/devices/battery_BAT$CURRBAT | grep -E state: | awk '{print $2}')"
+		# If level charging and above 80, send alert!
+		if [ "$POWERLVL" -ge "$MAXPOWER" -a "$STATE" == "charging" ]
+		then ($"notify-send" "$PNAME" "Charge reached $POWERLVL%! Time to disconnect.")
+			play -q /usr/share/savebat/snd/sound.ogg &
+			FREQ=15.4
+		elif [ "$POWERLVL" -le 20 -a "$STATE" == "discharging" ]
+		then ($"notify-send" "$PNAME" "Charge reached $POWERLVL%! Time to plug-in.")
+			play -q /usr/share/savebat/snd/alert.ogg &
+			FREQ=12
+		else FREQ=60
+		fi
 
-	# Wait x seconds before reattempt.
-	sleep $FREQ
-done
+		# Debug itteration.
+		echo $POWERLVL", "$STATE
+
+		# Wait x seconds before reattempt.
+		sleep $FREQ
+	done
+else
+	($"notify-send" "$PNAME" "Found no battery... Exiting!")
+	echo "No battery found at '/org/freedesktop/UPower/devices/battery_BAT$CURRBAT'
+Exiting!
+
+If there is a battery, make sure you have 'upower' installed on your system."
+fi
